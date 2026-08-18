@@ -3,7 +3,7 @@ name: Build Snake APK
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:  # позволяет запускать вручную
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,29 +19,28 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Grant execute permission for gradlew
-        run: |
-          if [ -f gradlew ]; then
-            chmod +x gradlew
-          else
-            echo "No gradlew found, will use gradle wrapper generation"
-          fi
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Build Debug APK
         run: |
-          # Generate gradle wrapper if missing
+          # Generate wrapper if needed
           if [ ! -f gradlew ]; then
             gradle wrapper --gradle-version 8.2
           fi
-          chmod +x gradlew
+          chmod +x gradlew || true
           ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: snake-game-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           retention-days: 30
+          if-no-files-found: warn
